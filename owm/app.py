@@ -1,3 +1,4 @@
+import base64
 import logging
 import boto3
 from collections import namedtuple
@@ -17,7 +18,7 @@ kinesis_stream_name = 'OWM-PIPELINE'
 session = boto3.session.Session(region_name=AWS_REGION_NAME)
 kinesis_client = session.client('firehose')
 
-async def get_data(city):
+def get_data(city):
     # Get the current weather details for the given city.
     api = base_url + "appid=" + api_key + "&q=" + city
     response = requests.get(api)
@@ -88,19 +89,29 @@ def convert_and_clean_pd(data):
 
 
 def run():
-    data = asyncio.run(get_data('sydney'))
+    data = get_data('sydney')
     df = convert_and_clean_pd(data)
     return df
 
 
 def lambda_handler(event, context):
-    current_weather = run()
-    current_weather = current_weather.to_dict('r')
-    response = kinesis_client.put_record(
-        DeliveryStreamName = kinesis_stream_name,
-        Record = {
-            "Data": json.dumps(current_weather)
+    try:
+        current_weather = run()
+        current_weather = current_weather.to_json(orient="records")
+        parsed = json.loads(current_weather)
+        data =  json.dumps(parsed)
+        # data = json.dumps(current_weather).encode('utf-8')
+        # data = base64.b64encode(json.dumps(parsed).encode('utf-8')).decode('utf-8')
+        time.sleep(1)
+        response = kinesis_client.put_record(
+            DeliveryStreamName = kinesis_stream_name,
+            Record = {
+                "Data": data
+            }
+        )
+        time.sleep(1)
+        return {
+            "records": data
         }
-    )
-
-    return current_weather
+    except Exception as e:
+        print(str(e))
