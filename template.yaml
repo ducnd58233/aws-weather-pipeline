@@ -8,7 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 300
+    Timeout: 900
     MemorySize: 128
 
 Resources:
@@ -16,7 +16,7 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       PackageType: Image
-      MemorySize: 20
+      MemorySize: 128
       Timeout: 900
       Architectures:
         - x86_64
@@ -25,7 +25,6 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: rate(1 hour)
-            Enabled: True
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./owm
